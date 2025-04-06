@@ -1,36 +1,32 @@
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:get_it/get_it.dart';
-import 'package:retroachievements_organizer/controller/login_controller.dart';
-import 'package:retroachievements_organizer/view/md_games_view.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'view/about_view.dart';
-import 'view/forgot_view.dart';    // Import the forgot password view
+import 'view/forgot_view.dart';
 import 'view/login_view.dart';
 import 'view/main_app_view.dart';
-import 'view/register_view.dart';  // Import the register view
-
-final g = GetIt.instance;
+import 'view/md5_games_view.dart';
+import 'view/register_view.dart';
 
 void main() async {
   // Ensure Flutter widgets are initialized
   WidgetsFlutterBinding.ensureInitialized();
-
+  
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
 
-  // Register controllers using GetIt for dependency injection
-  g.registerSingleton<LoginController>(LoginController());
-
   // Run the app with Device Preview for responsive testing
   runApp(
-    DevicePreview(
-      enabled: false, // Set to true only during development
-      builder: (context) => const MainApp(),
+    ProviderScope(
+      child: DevicePreview(
+        enabled: false, // Set to true only during development
+        builder: (context) => const MainApp(),
+      ),
     ),
   );
 }
@@ -61,14 +57,34 @@ class MainApp extends StatelessWidget {
       builder: DevicePreview.appBuilder,
       // Routes
       initialRoute: 'login',
-routes: {
-  'login': (context) => const LoginScreen(),
-  'home': (context) => const MainAppScreen(),
-  'about': (context) => const AboutScreen(),
-  'register': (context) => const RegisterScreen(),      
-  'forgot_password': (context) => const ForgotPasswordScreen(),
-  'mega_drive': (context) => const MegaDriveGamesScreen(), // Keep this route for any direct navigation
-},
+      routes: {
+        'login': (context) => const LoginScreen(),
+        'home': (context) => const MainAppScreen(),
+        'about': (context) => const AboutScreen(),
+        'register': (context) => const RegisterScreen(),      
+        'forgot_password': (context) => const ForgotPasswordScreen(),
+        // Specific console routes can be added dynamically through MaterialPageRoute or nested navigation
+      },
+      onGenerateRoute: (settings) {
+        // Handle dynamic routes for consoles
+        if (settings.name?.startsWith('console/') == true) {
+          final parts = settings.name!.split('/');
+          if (parts.length >= 3) {
+            final consoleId = int.tryParse(parts[1]);
+            final consoleName = parts[2];
+            
+            if (consoleId != null) {
+              return MaterialPageRoute(
+                builder: (context) => MD5GamesScreen(
+                  consoleId: consoleId,
+                  consoleName: consoleName,
+                ),
+              );
+            }
+          }
+        }
+        return null;
+      },
     );
   }
 }

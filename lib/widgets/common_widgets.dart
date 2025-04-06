@@ -1,5 +1,6 @@
 // lib/widgets/common_widgets.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:retroachievements_organizer/constants/constants.dart';
 
 /// Common app bar with RetroAchievements branding
@@ -295,6 +296,22 @@ class RAStatusBadge extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+
+// ConsumerWrapper for existing widgets that need access to Riverpod
+class RAConsumerWidget extends ConsumerWidget {
+  final Widget Function(BuildContext context, WidgetRef ref) builder;
+
+  const RAConsumerWidget({
+    super.key,
+    required this.builder,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return builder(context, ref);
   }
 }
 

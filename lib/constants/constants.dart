@@ -12,7 +12,18 @@ class ApiConstants {
   static const String getConsolePage = '$apiPath/API_GetConsoleID.php';
   static const String getPlatforms = '$apiPath/API_GetConsoleIDs.php';
   static const String getConsoleIDs = '$apiPath/API_GetConsoleIDs.php';
-}
+  static const String getGame = '$apiPath/API_GetGame.php';
+  static const String getGameExtended = '$apiPath/API_GetGameExtended.php';
+  static const String getGameHashes = '$apiPath/API_GetGameHashes.php';
+  static const String getUserRecentAchievements = '$apiPath/API_GetUserRecentAchievements.php';
+  static const String getUserSummary = '$apiPath/API_GetUserSummary.php';
+  static const String getUserProgress = '$apiPath/API_GetUserProgress.php';
+  static const String getUserGameCompletion = '$apiPath/API_GetUserGameCompletion.php';
+  static const String getGameInfoAndUserProgress = '$apiPath/API_GetGameInfoAndUserProgress.php';
+  static const String getAchievementCount = '$apiPath/API_GetAchievementCount.php';
+  static const String getAchievementDistribution = '$apiPath/API_GetAchievementDistribution.php';
+  static const String getAchievementOfTheWeek = '$apiPath/API_GetAchievementOfTheWeek.php';
+  }
 
 /// Color Constants
 class AppColors {
@@ -23,6 +34,40 @@ class AppColors {
   static const Color appBarBackground = Color(0xFF222222);
   static const Color inputBorder = Color(0xFFFFD700);
   
+  static const double defaultPadding = 16.0;
+static const double smallPadding = 8.0;
+static const double tinyPadding = 4.0;
+static const double largePadding = 24.0;
+
+// Font sizes
+static const double fontSizeSmall = 10.0;
+static const double fontSizeDefault = 14.0;
+static const double fontSizeMedium = 16.0;
+static const double fontSizeLarge = 18.0;
+static const double fontSizeXLarge = 24.0;
+
+// Border radius
+static const double borderRadiusSmall = 4.0;
+static const double borderRadiusDefault = 8.0;
+static const double borderRadiusLarge = 12.0;
+
+// Icon sizes
+static const double iconSizeSmall = 16.0;
+static const double iconSizeDefault = 24.0;
+static const double iconSizeLarge = 36.0;
+  // Game Details
+  static const String gameDetails = 'Game Details';
+  static const String developer = 'Developer';
+  static const String publisher = 'Publisher';
+  static const String genre = 'Genre';
+  static const String released = 'Released';
+  static const String players = 'Players';
+  static const String gameHashes = 'Game Hashes';
+  static const String availableInLibrary = 'Available in library';
+  static const String notAvailableInLibrary = 'Not available in library';
+  static const String loading = 'Loading...';
+
+
   // Text colors
   static const Color textLight = Colors.white;
   static const Color textHighlight = Color(0xFFFFD700);
@@ -45,6 +90,14 @@ class AppStrings {
   // App name
   static const String appName = 'RetroAchievements Library Organizer';
   
+
+static const String romDirectories = 'ROM Directories';
+static const String addFolder = 'Add Folder';
+static const String save = 'Save';
+static const String directoryAlreadyInList = 'This directory is already in the list';
+static const String manageDirectories = 'Manage Directories';
+static const String availableInLibrary = 'Available in library';
+  static const String notAvailableInLibrary = 'Not available in library';
   // Common
   static const String loading = 'Loading...';
   static const String error = 'Error';
@@ -129,6 +182,8 @@ class AppStrings {
   static const String confirmPassword = 'Confirm Password';
   static const String registrationSuccessful = 'Registration successful! You can now login.';
   
+
+
   // Validation messages
   static const String pleaseEnterName = 'Please enter your name';
   static const String pleaseEnterEmail = 'Please enter your email';
@@ -147,6 +202,7 @@ class AppStrings {
   
   // About screen
   static const String aboutTitle = 'About RetroAchievements Organizer';
+  
 }
 
 /// Default pagination values

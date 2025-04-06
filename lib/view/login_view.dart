@@ -1,73 +1,27 @@
-// ignore_for_file: use_build_context_synchronously
-
+// lib/view/login_view.dart
 import 'package:flutter/material.dart';
-import 'package:get_it/get_it.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:retroachievements_organizer/constants/constants.dart';
-import 'package:retroachievements_organizer/controller/login_controller.dart';
+// Ensure you're using the correct case for the import path
+import 'package:retroachievements_organizer/providers/user_provider.dart';
 import 'package:retroachievements_organizer/widgets/common_widgets.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _apiKeyController = TextEditingController();
-  final LoginController _loginController = GetIt.instance<LoginController>();
-  bool _isLoading = false;
   bool _rememberMe = true; // Default to true for remember me checkbox
 
   @override
   void initState() {
     super.initState();
-    // Check if user is already logged in
-    _checkExistingLogin();
-  }
-
-  // Check for existing login data
-  Future<void> _checkExistingLogin() async {
-    final loginData = await _loginController.getLoginData();
-    if (loginData != null) {
-      setState(() {
-        _usernameController.text = loginData.username;
-        // We don't prefill the API key for security reasons
-      });
-      
-      // Check if auto-login is enabled and credentials exist
-      final autoLogin = await _loginController.getAutoLogin();
-      if (autoLogin) {
-        // Auto login
-        _performAutoLogin(loginData.username, loginData.apiKey);
-      }
-    }
-  }
-  
-  // Perform auto login
-  Future<void> _performAutoLogin(String username, String apiKey) async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    // Process login
-    final success = await _loginController.processLogin(
-      context, 
-      username, 
-      apiKey,
-    );
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-
-      if (success) {
-        // Navigate to the home screen
-        Navigator.pushReplacementNamed(context, 'home');
-      }
-    }
+    // No need to check login here, the provider does it automatically
   }
 
   @override
@@ -83,32 +37,22 @@ class _LoginScreenState extends State<LoginScreen> {
     final apiKey = _apiKeyController.text.trim();
 
     // Validate fields
-    if (!_loginController.validateFields(username, apiKey)) {
-      _loginController.showValidationError(context);
+    if (username.isEmpty || apiKey.isEmpty) {
+      _showValidationError();
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    // Process login
-    final success = await _loginController.processLogin(
-      context, 
-      username, 
-      apiKey,
-    );
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-
-      if (success) {
-        // Save auto login preference
-        await _loginController.setAutoLogin(_rememberMe);
-        
-        // Show success and navigate to next screen
+    // Call login method in our provider
+    await ref.read(userProvider.notifier).login(username, apiKey);
+    
+    final userState = ref.read(userProvider);
+    
+    if (userState.isAuthenticated) {
+      // Save auto login preference
+      await ref.read(userProvider.notifier).setAutoLogin(_rememberMe);
+      
+      // Show success and navigate to next screen
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(AppStrings.loginSuccessful),
@@ -119,7 +63,70 @@ class _LoginScreenState extends State<LoginScreen> {
         // Navigate to the home screen
         Navigator.pushReplacementNamed(context, 'home');
       }
+    } else if (userState.errorMessage != null) {
+      // Show error message
+      if (mounted) {
+        _showAuthError(userState.errorMessage!);
+      }
     }
+  }
+  
+  // Show alert if validation fails
+  void _showValidationError() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF333333),
+          title: const Text(
+            'Validation Error',
+            style: TextStyle(color: Color(0xFFFFD700)),
+          ),
+          content: const Text(
+            'Please fill in both username and API key fields.',
+            style: TextStyle(color: Colors.white),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'OK',
+                style: TextStyle(color: Color(0xFFFFD700)),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Show authentication error
+  void _showAuthError(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF333333),
+          title: const Text(
+            'Authentication Error',
+            style: TextStyle(color: Color(0xFFFFD700)),
+          ),
+          content: Text(
+            message,
+            style: const TextStyle(color: Colors.white),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'OK',
+                style: TextStyle(color: Color(0xFFFFD700)),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // Navigate to register screen
@@ -134,6 +141,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch the user state to react to changes
+    final userState = ref.watch(userProvider);
+    
+    // If already authenticated, navigate to home
+    if (userState.isAuthenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacementNamed(context, 'home');
+      });
+    }
+    
+    // Populate username field if available
+    if (userState.username != null && _usernameController.text.isEmpty) {
+      _usernameController.text = userState.username!;
+    }
+    
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: const RAAppBar(
@@ -224,7 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 RAPrimaryButton(
                   text: AppStrings.login,
                   onPressed: _handleLogin,
-                  isLoading: _isLoading,
+                  isLoading: userState.isLoading,
                 ),
                 
                 const SizedBox(height: 24),

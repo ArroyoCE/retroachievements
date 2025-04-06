@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:get_it/get_it.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:retroachievements_organizer/constants/constants.dart';
 import 'package:retroachievements_organizer/controller/api_calls.dart';
-import 'package:retroachievements_organizer/controller/login_controller.dart';
+import 'package:retroachievements_organizer/providers/user_provider.dart';
 import 'package:retroachievements_organizer/widgets/common_widgets.dart';
 import 'package:retroachievements_organizer/widgets/pagination_widget.dart';
 
@@ -17,16 +17,14 @@ enum SortOption {
   platformDesc,
 }
 
-class AchievementsScreen extends StatefulWidget {
+class AchievementsScreen extends ConsumerStatefulWidget {
   const AchievementsScreen({super.key});
 
   @override
-  State<AchievementsScreen> createState() => _AchievementsScreenState();
+  ConsumerState<AchievementsScreen> createState() => _AchievementsScreenState();
 }
 
-class _AchievementsScreenState extends State<AchievementsScreen> {
-  final LoginController _loginController = GetIt.instance<LoginController>();
-  
+class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
   bool _isLoading = true;
   // ignore: unused_field
   Map<String, dynamic>? _userAwards;
@@ -86,8 +84,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       return;
     }
     
-    // Get login data for API refresh
-    final loginData = await _loginController.getLoginData();
+    // Get login data for API refresh using Riverpod
+    final loginData = await ref.read(userProvider.notifier).getLoginData();
     if (loginData != null) {
       // Fetch fresh data from API
       final awardsResponse = await ApiService.getUserAwards(

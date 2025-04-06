@@ -1,83 +1,47 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:get_it/get_it.dart';
 import 'package:retroachievements_organizer/constants/constants.dart';
-import 'package:retroachievements_organizer/controller/api_calls.dart';
-import 'package:retroachievements_organizer/controller/login_controller.dart';
 import 'package:retroachievements_organizer/view/achievement_view.dart';
+import 'package:retroachievements_organizer/view/dashboard_view.dart';
 import 'package:retroachievements_organizer/view/games_view.dart';
-import 'package:retroachievements_organizer/view/md_games_view.dart';
+import 'package:retroachievements_organizer/view/md5_games_view.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:retroachievements_organizer/providers/user_provider.dart';
 
-class MainAppScreen extends StatefulWidget {
+class MainAppScreen extends ConsumerStatefulWidget {
   const MainAppScreen({super.key});
 
   @override
-  State<MainAppScreen> createState() => _MainAppScreenState();
+  ConsumerState<MainAppScreen> createState() => _MainAppScreenState();
 }
 
-class _MainAppScreenState extends State<MainAppScreen> {
-  final LoginController _loginController = GetIt.instance<LoginController>();
-  String _username = '';
+class _MainAppScreenState extends ConsumerState<MainAppScreen> {
   int _selectedIndex = 0;
-  String? _userPicPath;
-  Map<String, dynamic>? _userInfo;
-  bool _showMegaDriveGames = false;
+  
+  // State for the selected console
+  bool _showConsoleGames = false;
+  int _selectedConsoleId = 0;
+  String _selectedConsoleName = '';
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
-  }
-
-  Future<void> _loadUserData() async {
-    // Get login data
-    final loginData = await _loginController.getLoginData();
-    if (loginData != null) {
-      setState(() {
-        _username = loginData.username;
-      });
-      
-      // Load user achievements data in background
-      _loadAchievementsData(loginData.username, loginData.apiKey);
-    }
-    
-    // Get saved user info from file
-    final userInfo = await ApiService.getSavedUserInfo();
-    if (userInfo != null) {
-      setState(() {
-        _userInfo = userInfo;
-      });
-    }
-    
-    // Get user pic path
-    final userPicPath = await ApiService.getUserPicPath();
-    if (userPicPath != null) {
-      setState(() {
-        _userPicPath = userPicPath;
-      });
-    }
-  }
-  
-  // Load achievements data
-  Future<void> _loadAchievementsData(String username, String apiKey) async {
-    // Load user awards and completion progress in the background
-    await ApiService.getUserAwards(username, apiKey);
-    await ApiService.getUserCompletionProgress(username, apiKey);
+    // No need to load user data here as our provider handles it
   }
 
   void _onSidebarItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
       // Reset any sub-views when changing main navigation
-      _showMegaDriveGames = false;
+      _showConsoleGames = false;
     });
   }
   
   // Handle logout
   Future<void> _handleLogout() async {
-    // Call logout method from LoginController to disable auto login
-    await _loginController.logout();
+    // Call logout method in user provider
+    await ref.read(userProvider.notifier).logout();
     
     // Navigate to login screen
     if (mounted) {
@@ -104,7 +68,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
   Widget _buildContent() {
     switch (_selectedIndex) {
       case 0:
-        return _buildDashboard();
+        return const DashboardScreen();
       case 1:
         return _buildGamesSection();
       case 2:
@@ -112,7 +76,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
       case 3:
         return _buildSettings();
       default:
-        return _buildDashboard();
+        return const DashboardScreen();
     }
   }
   
@@ -132,21 +96,27 @@ class _MainAppScreenState extends State<MainAppScreen> {
   
   // Build Games section with either console selection or specific console games
   Widget _buildGamesSection() {
-    if (_showMegaDriveGames) {
+    if (_showConsoleGames) {
       return NotificationListener<BackToGamesNotification>(
         onNotification: (notification) {
           setState(() {
-            _showMegaDriveGames = false;
+            _showConsoleGames = false;
           });
           return true;
         },
-        child: const MegaDriveGamesScreen(embedded: true),
+        child: MD5GamesScreen(
+          embedded: true,
+          consoleId: _selectedConsoleId,
+          consoleName: _selectedConsoleName,
+        ),
       );
     } else {
-      return NotificationListener<MegaDriveSelectedNotification>(
+      return NotificationListener<ConsoleSelectedNotification>(
         onNotification: (notification) {
           setState(() {
-            _showMegaDriveGames = true;
+            _showConsoleGames = true;
+            _selectedConsoleId = notification.consoleId;
+            _selectedConsoleName = notification.consoleName;
           });
           return true;
         },
@@ -154,129 +124,13 @@ class _MainAppScreenState extends State<MainAppScreen> {
       );
     }
   }
-  
-  // Build dashboard with user info
-  Widget _buildDashboard() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // User Profile Card
-          if (_userInfo != null)
-            Card(
-              color: AppColors.cardBackground,
-              elevation: 4,
-              margin: const EdgeInsets.only(bottom: 20),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    // User pic
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: AppColors.darkBackground,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: _userPicPath != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.file(
-                                File(_userPicPath!),
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                          : const Icon(
-                              Icons.account_circle,
-                              color: AppColors.primary,
-                              size: 60,
-                            ),
-                    ),
-                    const SizedBox(width: 16),
-                    // User info
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _userInfo!['User'] ?? _username,
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Member since: ${_userInfo!['MemberSince']?.toString().split(' ')[0] ?? 'N/A'}',
-                            style: const TextStyle(
-                              color: AppColors.textLight,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Total Points: ${_userInfo!['TotalPoints'] ?? 'N/A'}',
-                            style: const TextStyle(
-                              color: AppColors.textLight,
-                              fontSize: 14,
-                            ),
-                          ),
-                          if (_userInfo!['RichPresenceMsg'] != null && _userInfo!['RichPresenceMsg'].toString().isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                '${_userInfo!['RichPresenceMsg']}',
-                                style: const TextStyle(
-                                  color: AppColors.textSubtle,
-                                  fontStyle: FontStyle.italic,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          
-          const SizedBox(height: 16),
-          
-          // Dashboard content
-          const Text(
-            'Dashboard',
-            style: TextStyle(
-              color: AppColors.textLight,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Welcome to the RetroAchievements Library Organizer!',
-            style: TextStyle(
-              color: AppColors.textLight,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Use the sidebar to navigate through your games and achievements.',
-            style: TextStyle(
-              color: AppColors.textLight,
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
+    @override
   Widget build(BuildContext context) {
+    // Watch user state
+    final userState = ref.watch(userProvider);
+    
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(
@@ -322,11 +176,11 @@ class _MainAppScreenState extends State<MainAppScreen> {
                   child: Row(
                     children: [
                       // User profile pic
-                      _userPicPath != null
+                      userState.userPicPath != null
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: Image.file(
-                                File(_userPicPath!),
+                                File(userState.userPicPath!),
                                 height: 24,
                                 width: 24,
                                 fit: BoxFit.cover,
@@ -339,7 +193,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
                             ),
                       const SizedBox(width: 8),
                       Text(
-                        _username,
+                        userState.username ?? '',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                         ),
@@ -392,11 +246,11 @@ class _MainAppScreenState extends State<MainAppScreen> {
               child: Row(
                 children: [
                   // User profile pic
-                  _userPicPath != null
+                  userState.userPicPath != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: Image.file(
-                            File(_userPicPath!),
+                            File(userState.userPicPath!),
                             height: 24,
                             width: 24,
                             fit: BoxFit.cover,
@@ -409,7 +263,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
                         ),
                   const SizedBox(width: 8),
                   Text(
-                    _username,
+                    userState.username ?? '',
                     style: const TextStyle(
                       color: AppColors.textLight,
                       fontWeight: FontWeight.bold,

@@ -1,7 +1,7 @@
 name: retroachievements_organizer
 description: "A new Flutter project."
 publish_to: 'none'
-version: 0.1.0
+version: 0.5.0
 
 environment:
   sdk: ^3.5.3
@@ -10,13 +10,18 @@ dependencies:
   flutter:
     sdk: flutter
   device_preview: ^1.2.0
-  get_it: ^8.0.3
   flutter_secure_storage: ^9.2.4
   shared_preferences: ^2.2.0  # For simple data storage
   http: ^1.1.0  # For API calls (will be useful for RetroAchievements API)
   path_provider: ^2.1.1 # For accessing the device's file system
   crypto: ^3.0.6
   file_picker: ^10.0.0
+  url_launcher: ^6.3.1
+  url_launcher_windows: ^3.1.4
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+  build_runner: ^2.4.13
+  riverpod_generator: ^2.6.3
   
 dev_dependencies:
   flutter_test:
